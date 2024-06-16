@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
@@ -7,6 +7,7 @@ import * as bcryptjs from "bcryptjs";
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { User } from './entities/user.entity';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -40,6 +41,27 @@ export class AuthService {
 
       throw new InternalServerErrorException('Oops!, algo malo ocurrió')
     }
+  }
+
+  async login(loginDto: LoginDto){
+    const { email, password } = loginDto;
+
+    const user = await this.userModel.findOne({ email });
+
+    if( !user ){
+      throw new UnauthorizedException('Correo o contraseña invalidos');
+    }
+    
+    if( !bcryptjs.compareSync( password, user.password ) ){
+      throw new UnauthorizedException('Correo o contraseña invalidos');
+    }
+
+    const { password:_, ...userData } = user.toJSON();
+
+    return {
+      ...userData,
+      token: 'ABC-123'
+    };
   }
 
   findAll() {
